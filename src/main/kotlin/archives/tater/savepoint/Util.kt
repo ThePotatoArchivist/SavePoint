@@ -3,12 +3,15 @@
 package archives.tater.savepoint
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry
+import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType
 import net.minecraft.component.Component
 import net.minecraft.component.ComponentType
 import net.minecraft.inventory.Inventory
 import net.minecraft.item.ItemStack
 import net.minecraft.util.Identifier
+import java.util.stream.Stream
+import java.util.stream.StreamSupport
 
 fun <T> createAttachment(id: Identifier, init: AttachmentRegistry.Builder<T>.() -> Unit): AttachmentType<T> =
     AttachmentRegistry.create(id) { it.init() }
@@ -25,3 +28,8 @@ operator fun Inventory.iterator() = object : Iterator<ItemStack> {
 fun Inventory.toIterable() = object : Iterable<ItemStack> {
     override fun iterator(): Iterator<ItemStack> = this@toIterable.iterator()
 }
+
+fun <T> Iterable<T>.toStream(parallel: Boolean = false): Stream<T> = StreamSupport.stream(spliterator(), parallel)
+
+operator fun <T> AttachmentTarget.get(type: AttachmentType<T>) = getAttached(type)
+operator fun <T> AttachmentTarget.set(type: AttachmentType<T>, value: T) = setAttached(type, value)

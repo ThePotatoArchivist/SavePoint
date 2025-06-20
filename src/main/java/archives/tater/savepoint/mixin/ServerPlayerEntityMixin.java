@@ -12,13 +12,13 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ServerPlayerEntity.class)
-public class ServerPlayerEntityMixin {
+public abstract class ServerPlayerEntityMixin {
 	@Inject(
 			method = "setSpawnPoint",
 			at = @At("TAIL")
 	)
 	private void saveInventory(RegistryKey<World> dimension, @Nullable BlockPos pos, float angle, boolean forced, boolean sendMessage, CallbackInfo ci) {
-		if (pos != null)
+		if (pos != null && sendMessage)
 			SavePoint.saveInventory((ServerPlayerEntity) (Object) this);
 	}
 }

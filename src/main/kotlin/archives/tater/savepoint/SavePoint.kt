@@ -42,7 +42,12 @@ object SavePoint : ModInitializer {
 
 	@JvmStatic
 	fun saveInventory(player: ServerPlayerEntity) {
-		player.setAttached(SAVED_INVENTORY, player.inventory.toIterable().filterNot { it.isEmpty })
+		player[SAVED_INVENTORY] = player.inventory
+			.toIterable()
+			.toStream()
+			.filter { !it.isEmpty }
+			.map { it.copy() }
+			.toList()
 		player.sendMessage(Text.translatable(INVENTORY_SAVED_TEXT))
 	}
 
