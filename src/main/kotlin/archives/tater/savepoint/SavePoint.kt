@@ -33,21 +33,16 @@ object SavePoint : ModInitializer {
 	)
 
 	@JvmField
-	val SAVED_INVENTORY: AttachmentType<MutableList<ItemStack>> = createAttachment(id("saved_inventory")) {
+	val SAVED_INVENTORY: AttachmentType<List<ItemStack>> = createAttachment(id("saved_inventory")) {
 		persistent(ItemStack.CODEC.listOf().xmap({ it.toMutableList() }, { it }))
 		copyOnDeath()
-		initializer { mutableListOf() }
 	}
 
 	const val INVENTORY_SAVED_TEXT = "savepoint.inventory_saved"
 
 	@JvmStatic
 	fun saveInventory(player: ServerPlayerEntity) {
-		with (player.getAttachedOrCreate(SAVED_INVENTORY)) {
-			clear()
-			for (i in 0..<player.inventory.size())
-				player.inventory.getStack(i).let { if (!it.isEmpty) add(it) }
-		}
+		player.setAttached(SAVED_INVENTORY, player.inventory.toIterable().filterNot { it.isEmpty })
 		player.sendMessage(Text.translatable(INVENTORY_SAVED_TEXT))
 	}
 
