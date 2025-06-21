@@ -8,8 +8,10 @@ import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.fabricmc.loader.api.FabricLoader
-import net.minecraft.component.DataComponentTypes
+import net.minecraft.component.ComponentType
 import net.minecraft.item.ItemStack
+import net.minecraft.registry.RegistryKeys
+import net.minecraft.registry.tag.TagKey
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 import net.minecraft.util.Identifier
@@ -25,18 +27,7 @@ object SavePoint : ModInitializer {
 
     private val logger = LoggerFactory.getLogger(MOD_ID)
 
-	val ignoredComponents = setOf(
-		DataComponentTypes.DAMAGE,
-		DataComponentTypes.BUNDLE_CONTENTS,
-		DataComponentTypes.CHARGED_PROJECTILES,
-		DataComponentTypes.MAP_DECORATIONS,
-		DataComponentTypes.ENCHANTMENTS,
-		DataComponentTypes.CUSTOM_NAME,
-		DataComponentTypes.REPAIR_COST,
-		DataComponentTypes.DYED_COLOR,
-		DataComponentTypes.TRIM,
-		DataComponentTypes.WRITABLE_BOOK_CONTENT,
-	)
+	val RESTORE_IGNORED_TAG: TagKey<ComponentType<*>> = TagKey.of(RegistryKeys.DATA_COMPONENT_TYPE, id("restore_ignored"))
 
 	@JvmField
 	val SAVED_INVENTORY: AttachmentType<List<ItemStack>> = createAttachment(id("saved_inventory")) {
@@ -78,7 +69,7 @@ object SavePoint : ModInitializer {
 	fun stacksMatch(first: ItemStack, second: ItemStack): Boolean =
 		ItemStack.areItemsAndComponentsEqual(first, second) ||
 		ItemStack.areItemsEqual(first, second) &&
-				(first.components.types + second.components.types).all { it in ignoredComponents || first[it] == second[it] }
+				(first.components.types + second.components.types).all { it isIn RESTORE_IGNORED_TAG || first[it] == second[it] }
 
 	/**
 	 * The stacks in `savedDirty` are mutated

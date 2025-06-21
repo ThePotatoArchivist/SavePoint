@@ -1,0 +1,9 @@
+{
+  "values": [
+    "minecraft:damage",
+    "minecraft:charged_projectiles",
+    "minecraft:map_decorations",
+    "minecraft:writable_book_content",
+    { "id": "bundle-backportish:bundle_selection", "required": false }
+  ]
+}

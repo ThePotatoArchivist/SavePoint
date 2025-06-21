@@ -9,6 +9,8 @@ import net.minecraft.component.Component
 import net.minecraft.component.ComponentType
 import net.minecraft.inventory.Inventory
 import net.minecraft.item.ItemStack
+import net.minecraft.registry.Registries
+import net.minecraft.registry.tag.TagKey
 import net.minecraft.util.Identifier
 import java.util.stream.Stream
 import java.util.stream.StreamSupport
@@ -33,3 +35,6 @@ fun <T> Iterable<T>.toStream(parallel: Boolean = false): Stream<T> = StreamSuppo
 
 operator fun <T: Any> AttachmentTarget.get(type: AttachmentType<T>) = getAttached(type)
 operator fun <T: Any> AttachmentTarget.set(type: AttachmentType<T>, value: T?) = setAttached(type, value)
+
+infix fun ComponentType<*>.isIn(tag: TagKey<ComponentType<*>>) =
+    Registries.DATA_COMPONENT_TYPE.getEntry(this).isIn(tag)
