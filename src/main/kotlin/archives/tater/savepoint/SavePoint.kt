@@ -1,14 +1,20 @@
 package archives.tater.savepoint
 
+import io.wispforest.accessories.api.AccessoriesCapability
+import io.wispforest.accessories.api.DropRule
+import io.wispforest.accessories.api.events.OnDropCallback
 import net.fabricmc.api.ModInitializer
+import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
+import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.component.DataComponentTypes
 import net.minecraft.item.ItemStack
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 import org.slf4j.LoggerFactory
+import java.util.stream.Stream
 import kotlin.math.min
 
 @Suppress("UnstableApiUsage")
@@ -34,21 +40,35 @@ object SavePoint : ModInitializer {
 
 	@JvmField
 	val SAVED_INVENTORY: AttachmentType<List<ItemStack>> = createAttachment(id("saved_inventory")) {
-		persistent(ItemStack.CODEC.listOf().xmap({ it.toMutableList() }, { it }))
+		persistent(ItemStack.CODEC.listOf())
 		copyOnDeath()
 	}
 
+	@JvmField
+	val SAVED_INVENTORY_DIRTY: AttachmentType<List<ItemStack>> = AttachmentRegistry.create(id("saved_inventory_dirty"))
+
 	const val INVENTORY_SAVED_TEXT = "savepoint.inventory_saved"
+
+	val ACCESSORIES_INSTALLED = FabricLoader.getInstance().isModLoaded("accessories")
 
 	@JvmStatic
 	fun saveInventory(player: ServerPlayerEntity) {
-		player[SAVED_INVENTORY] = player.inventory
-			.toIterable()
-			.toStream()
+		player[SAVED_INVENTORY] = Stream.concat(
+			player.inventory.toIterable().toStream(),
+			(if (!ACCESSORIES_INSTALLED) null else AccessoriesCapability.get(player)?.run { allEquipped.stream().map { it.stack } }) ?: Stream.empty()
+		)
 			.filter { !it.isEmpty }
 			.map { it.copy() }
 			.toList()
 		player.sendMessage(Text.translatable(INVENTORY_SAVED_TEXT))
+	}
+
+	@JvmStatic
+	fun copyToDirty(player: ServerPlayerEntity): List<ItemStack>? {
+		player[SAVED_INVENTORY_DIRTY]?.let { return it }
+		return player[SAVED_INVENTORY].takeUnless { it.isNullOrEmpty() }?.map(ItemStack::copy)?.also {
+			player[SAVED_INVENTORY_DIRTY] = it
+		}
 	}
 
 	fun stacksMatch(first: ItemStack, second: ItemStack): Boolean =
@@ -57,21 +77,19 @@ object SavePoint : ModInitializer {
 				(first.components.types + second.components.types).all { it in ignoredComponents || first[it] == second[it] }
 
 	/**
-	 * The stacks in `savedItems` are mutated, as well as `stack`
-	 * @return the stack to keep in the inventory
+	 * The stacks in `savedDirty` are mutated
+	 * @return the amount kept
 	 */
 	@JvmStatic
-	fun processKept(stack: ItemStack, savedItems: List<ItemStack>): ItemStack {
-		var amountToSave = stack.count
-		val amountSaved = savedItems.sumOf { savedStack ->
-			if (amountToSave == 0 || !stacksMatch(stack, savedStack)) 0
-			else min(amountToSave, savedStack.count).also {
+	fun getAmountKept(stack: ItemStack, savedDirty: List<ItemStack>): Int {
+		var amountDropped = stack.count
+		return savedDirty.sumOf { savedStack ->
+			if (amountDropped == 0 || !stacksMatch(stack, savedStack)) 0
+			else min(amountDropped, savedStack.count).also {
 				savedStack.decrement(it)
-				amountToSave -= it
+				amountDropped -= it
 			}
 		}
-		if (amountSaved == 0) return ItemStack.EMPTY
-		return stack.split(amountSaved)
 	}
 
 	override fun onInitialize() {
@@ -80,6 +98,18 @@ object SavePoint : ModInitializer {
 		// Proceed with mild caution.
 		ServerPlayerEvents.COPY_FROM.register { oldPlayer, newPlayer, _ ->
 			newPlayer.inventory.clone(oldPlayer.inventory) // Make sure this doesn't cause problems
+		}
+		if (ACCESSORIES_INSTALLED) {
+			OnDropCallback.EVENT.register { rule, _, slotRef, _ ->
+				if (rule != DropRule.DEFAULT) return@register rule
+				val stack = slotRef.stack ?: return@register rule
+				val player = slotRef.entity() as? ServerPlayerEntity ?: return@register rule
+				val savedDirty = copyToDirty(player) ?: return@register rule
+				val kept = getAmountKept(stack, savedDirty)
+				if (kept == 0) return@register rule
+				player.dropItem(stack.split(stack.count - kept), true, false)
+				DropRule.KEEP
+			}
 		}
 	}
 }

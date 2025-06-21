@@ -31,5 +31,5 @@ fun Inventory.toIterable() = object : Iterable<ItemStack> {
 
 fun <T> Iterable<T>.toStream(parallel: Boolean = false): Stream<T> = StreamSupport.stream(spliterator(), parallel)
 
-operator fun <T> AttachmentTarget.get(type: AttachmentType<T>) = getAttached(type)
-operator fun <T> AttachmentTarget.set(type: AttachmentType<T>, value: T) = setAttached(type, value)
+operator fun <T: Any> AttachmentTarget.get(type: AttachmentType<T>) = getAttached(type)
+operator fun <T: Any> AttachmentTarget.set(type: AttachmentType<T>, value: T?) = setAttached(type, value)
