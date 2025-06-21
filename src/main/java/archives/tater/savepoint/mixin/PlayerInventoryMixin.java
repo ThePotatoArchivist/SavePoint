@@ -26,7 +26,7 @@ public class PlayerInventoryMixin {
     )
     private void copySavedItems(CallbackInfo ci) {
         if (player instanceof ServerPlayerEntity serverPlayer)
-            SavePoint.copyToDirty(serverPlayer);
+            SavePoint.getDirtyOrSet(serverPlayer);
     }
 
     @ModifyArg(

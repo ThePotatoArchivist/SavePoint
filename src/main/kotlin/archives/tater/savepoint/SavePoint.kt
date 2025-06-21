@@ -60,15 +60,19 @@ object SavePoint : ModInitializer {
 			.filter { !it.isEmpty }
 			.map { it.copy() }
 			.toList()
+
 		player.sendMessage(Text.translatable(INVENTORY_SAVED_TEXT))
 	}
 
 	@JvmStatic
-	fun copyToDirty(player: ServerPlayerEntity): List<ItemStack>? {
+	fun getDirtyOrSet(player: ServerPlayerEntity): List<ItemStack>? {
 		player[SAVED_INVENTORY_DIRTY]?.let { return it }
-		return player[SAVED_INVENTORY].takeUnless { it.isNullOrEmpty() }?.map(ItemStack::copy)?.also {
-			player[SAVED_INVENTORY_DIRTY] = it
-		}
+		return player[SAVED_INVENTORY]
+			.takeUnless { it.isNullOrEmpty() }
+			?.map(ItemStack::copy)
+			?.also {
+				player[SAVED_INVENTORY_DIRTY] = it
+			}
 	}
 
 	fun stacksMatch(first: ItemStack, second: ItemStack): Boolean =
@@ -104,10 +108,11 @@ object SavePoint : ModInitializer {
 				if (rule != DropRule.DEFAULT) return@register rule
 				val stack = slotRef.stack ?: return@register rule
 				val player = slotRef.entity() as? ServerPlayerEntity ?: return@register rule
-				val savedDirty = copyToDirty(player) ?: return@register rule
+				val savedDirty = getDirtyOrSet(player) ?: return@register rule
 				val kept = getAmountKept(stack, savedDirty)
 				if (kept == 0) return@register rule
-				player.dropItem(stack.split(stack.count - kept), true, false)
+				if (kept != stack.count)
+					player.dropItem(stack.split(stack.count - kept), true, false)
 				DropRule.KEEP
 			}
 		}
