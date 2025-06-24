@@ -1,6 +1,7 @@
 package archives.tater.savepoint.mixin;
 
 import archives.tater.savepoint.SavePoint;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
@@ -20,5 +21,14 @@ public abstract class ServerPlayerEntityMixin {
 	private void saveInventory(RegistryKey<World> dimension, @Nullable BlockPos pos, float angle, boolean forced, boolean sendMessage, CallbackInfo ci) {
 		if (pos != null && sendMessage)
 			SavePoint.saveInventory((ServerPlayerEntity) (Object) this);
+	}
+
+
+	@Inject(
+			method = "onDeath",
+			at = @At("HEAD")
+	)
+	private void clearIfSpawnpointMissing(DamageSource damageSource, CallbackInfo ci) {
+		SavePoint.checkSpawnpointMissing((ServerPlayerEntity) (Object) this);
 	}
 }

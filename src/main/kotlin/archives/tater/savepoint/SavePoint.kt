@@ -6,15 +6,18 @@ import io.wispforest.accessories.api.events.OnDropCallback
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.component.ComponentType
+import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.ItemStack
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.registry.tag.TagKey
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 import net.minecraft.util.Identifier
+import net.minecraft.world.TeleportTarget
 import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 import kotlin.math.min
@@ -30,8 +33,8 @@ object SavePoint : ModInitializer {
 	val RESTORE_IGNORED_TAG: TagKey<ComponentType<*>> = TagKey.of(RegistryKeys.DATA_COMPONENT_TYPE, id("restore_ignored"))
 
 	@JvmField
-	val SAVED_INVENTORY: AttachmentType<List<ItemStack>> = createAttachment(id("saved_inventory")) {
-		persistent(ItemStack.CODEC.listOf())
+	val SAVE_STATE: AttachmentType<SaveState> = createAttachment(id("save_state")) {
+		persistent(SaveState.CODEC)
 		copyOnDeath()
 	}
 
@@ -44,13 +47,17 @@ object SavePoint : ModInitializer {
 
 	@JvmStatic
 	fun saveInventory(player: ServerPlayerEntity) {
-		player[SAVED_INVENTORY] = Stream.concat(
-			player.inventory.toIterable().toStream(),
-			(if (!ACCESSORIES_INSTALLED) null else AccessoriesCapability.get(player)?.run { allEquipped.stream().map { it.stack } }) ?: Stream.empty()
+		player[SAVE_STATE] = SaveState(
+			Stream.concat(
+				player.inventory.toIterable().toStream(),
+				(if (!ACCESSORIES_INSTALLED) null else AccessoriesCapability.get(player)?.run { allEquipped.stream().map { it.stack } }) ?: Stream.empty()
+			)
+				.filter { !it.isEmpty }
+				.map { it.copy() }
+				.toList(),
+			player.experienceLevel,
+			player.experienceProgress,
 		)
-			.filter { !it.isEmpty }
-			.map { it.copy() }
-			.toList()
 
 		player.sendMessage(Text.translatable(INVENTORY_SAVED_TEXT))
 	}
@@ -58,8 +65,9 @@ object SavePoint : ModInitializer {
 	@JvmStatic
 	fun getDirtyOrSet(player: ServerPlayerEntity): List<ItemStack>? {
 		player[SAVED_INVENTORY_DIRTY]?.let { return it }
-		return player[SAVED_INVENTORY]
-			.takeUnless { it.isNullOrEmpty() }
+		return player[SAVE_STATE]
+			?.items
+			?.takeUnless { it.isEmpty() }
 			?.map(ItemStack::copy)
 			?.also {
 				player[SAVED_INVENTORY_DIRTY] = it
@@ -87,12 +95,25 @@ object SavePoint : ModInitializer {
 		}
 	}
 
+	@JvmStatic
+	fun getKeptXpLevels(player: PlayerEntity) =
+		player[SAVE_STATE]?.experienceLevel?.coerceIn(0, player.experienceLevel) ?: 0 // Player cannot gain xp by dying
+
+	@JvmStatic
+	fun checkSpawnpointMissing(player: ServerPlayerEntity) {
+		if (player.getRespawnTarget(false, TeleportTarget.NO_OP).missingRespawnBlock)
+			player[SAVE_STATE] = null
+	}
+
 	override fun onInitialize() {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
+		ServerLivingEntityEvents.ALLOW_DEATH
 		ServerPlayerEvents.COPY_FROM.register { oldPlayer, newPlayer, _ ->
 			newPlayer.inventory.clone(oldPlayer.inventory) // Make sure this doesn't cause problems
+			newPlayer.experienceLevel = getKeptXpLevels(oldPlayer)
+			newPlayer.experienceProgress = oldPlayer[SAVE_STATE]?.experienceProgress?.coerceIn(0f, oldPlayer.experienceProgress) ?: 0f
 		}
 		if (ACCESSORIES_INSTALLED) {
 			OnDropCallback.EVENT.register { rule, _, slotRef, _ ->

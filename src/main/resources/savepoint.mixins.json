@@ -3,6 +3,7 @@
   "package": "archives.tater.savepoint.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "PlayerEntityMixin",
     "PlayerInventoryMixin",
     "RespawnAnchorBlockMixin",
     "ServerPlayerEntityMixin"
