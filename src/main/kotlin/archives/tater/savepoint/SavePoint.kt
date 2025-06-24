@@ -102,7 +102,7 @@ object SavePoint : ModInitializer {
 	@JvmStatic
 	fun checkSpawnpointMissing(player: ServerPlayerEntity) {
 		if (player.getRespawnTarget(false, TeleportTarget.NO_OP).missingRespawnBlock)
-			player[SAVE_STATE] = null
+			player.removeAttached(SAVE_STATE)
 	}
 
 	override fun onInitialize() {
