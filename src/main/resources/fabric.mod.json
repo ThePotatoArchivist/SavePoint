@@ -2,16 +2,16 @@
 	"schemaVersion": 1,
 	"id": "savepoint",
 	"version": "${version}",
-	"name": "SavePoint",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"name": "Save Point",
+	"description": "Restore items from last save upon death",
 	"authors": [
-		"Me!"
+		"ThePotatoArchivist"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://modrinth.com/project/save-point",
+		"sources": "https://github.com/ThePotatoArchivist/SavePoint"
 	},
-	"license": "CC0-1.0",
+	"license": "LGPL-3.0-or-later",
 	"icon": "assets/savepoint/icon.png",
 	"environment": "*",
 	"entrypoints": {
@@ -20,20 +20,10 @@
 				"value": "archives.tater.savepoint.SavePoint",
 				"adapter": "kotlin"
 			}
-		],
-		"client": [
-			{
-				"value": "archives.tater.savepoint.SavePointClient",
-				"adapter": "kotlin"
-			}
 		]
 	},
 	"mixins": [
-		"savepoint.mixins.json",
-		{
-			"config": "savepoint.client.mixins.json",
-			"environment": "client"
-		}
+		"savepoint.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.16.14",
