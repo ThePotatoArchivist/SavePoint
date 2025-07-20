@@ -30,6 +30,9 @@ object SavePoint : ModInitializer {
 
     private val logger = LoggerFactory.getLogger(MOD_ID)
 
+	@JvmField
+	internal var accessoriesKept = false
+
 	val RESTORE_IGNORED_TAG: TagKey<ComponentType<*>> = TagKey.of(RegistryKeys.DATA_COMPONENT_TYPE, id("restore_ignored"))
 
 	@JvmField
@@ -116,15 +119,17 @@ object SavePoint : ModInitializer {
 			newPlayer.experienceProgress = oldPlayer[SAVE_STATE]?.experienceProgress?.coerceIn(0f, oldPlayer.experienceProgress) ?: 0f
 		}
 		if (ACCESSORIES_INSTALLED) {
-			OnDropCallback.EVENT.register { rule, _, slotRef, _ ->
+			OnDropCallback.EVENT.register { rule, stack, slotRef, _ ->
+				accessoriesKept = false
 				if (rule != DropRule.DEFAULT) return@register rule
-				val stack = slotRef.stack ?: return@register rule
 				val player = slotRef.entity() as? ServerPlayerEntity ?: return@register rule
 				val savedDirty = getDirtyOrSet(player) ?: return@register rule
 				val kept = getAmountKept(stack, savedDirty)
 				if (kept == 0) return@register rule
-				if (kept != stack.count)
-					player.dropItem(stack.split(stack.count - kept), true, false)
+				if (kept < stack.count) {
+					slotRef.stack = stack.split(kept)
+					accessoriesKept = true
+				}
 				DropRule.KEEP
 			}
 		}
