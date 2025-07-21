@@ -18,6 +18,8 @@ public class AccessoriesEventHandlerMixin {
             at = @At(value = "RETURN", ordinal = 1)
     )
     private static ItemStack keepItem(ItemStack original, @Local ItemStack stack) {
-        return SavePoint.accessoriesKept ? stack : original;
+        if (!SavePoint.accessoriesKept) return original;
+        SavePoint.accessoriesKept = false;
+        return stack;
     }
 }
