@@ -62,7 +62,7 @@ object SavePoint : ModInitializer {
 			player.experienceProgress,
 		)
 
-		player.sendMessage(Text.translatable(INVENTORY_SAVED_TEXT))
+		player.sendMessage(Text.translatableWithFallback(INVENTORY_SAVED_TEXT, "Inventory Saved"))
 	}
 
 	@JvmStatic
