@@ -6,7 +6,6 @@ import io.wispforest.accessories.api.events.OnDropCallback
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType
-import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.component.ComponentType
@@ -112,7 +111,6 @@ object SavePoint : ModInitializer {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
-		ServerLivingEntityEvents.ALLOW_DEATH
 		ServerPlayerEvents.COPY_FROM.register { oldPlayer, newPlayer, _ ->
 			newPlayer.inventory.clone(oldPlayer.inventory) // Make sure this doesn't cause problems
 			newPlayer.experienceLevel = getKeptXpLevels(oldPlayer)
