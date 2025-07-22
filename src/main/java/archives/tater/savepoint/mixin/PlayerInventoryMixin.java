@@ -47,7 +47,7 @@ public class PlayerInventoryMixin {
     @SuppressWarnings("unchecked")
     @ModifyArg(
             method = "dropAll",
-            at = @At(value = "INVOKE", target = "Ljava/util/List;set(ILjava/lang/Object;)Ljava/lang/Object;"),
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/util/collection/DefaultedList;set(ILjava/lang/Object;)Ljava/lang/Object;"),
             index = 1
     )
     private <E> E setKept(E e, @Share("keptItem") LocalRef<ItemStack> keptItem) {

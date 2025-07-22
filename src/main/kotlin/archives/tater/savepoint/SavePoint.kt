@@ -1,8 +1,5 @@
 package archives.tater.savepoint
 
-import io.wispforest.accessories.api.AccessoriesCapability
-import io.wispforest.accessories.api.DropRule
-import io.wispforest.accessories.api.events.OnDropCallback
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType
@@ -18,7 +15,6 @@ import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 import net.minecraft.world.TeleportTarget
 import org.slf4j.LoggerFactory
-import java.util.stream.Stream
 import kotlin.math.min
 
 @Suppress("UnstableApiUsage")
@@ -50,10 +46,10 @@ object SavePoint : ModInitializer {
 	@JvmStatic
 	fun saveInventory(player: ServerPlayerEntity) {
 		player[SAVE_STATE] = SaveState(
-			Stream.concat(
-				player.inventory.toIterable().toStream(),
-				(if (!ACCESSORIES_INSTALLED) null else AccessoriesCapability.get(player)?.run { allEquipped.stream().map { it.stack } }) ?: Stream.empty()
-			)
+//			Stream.concat(
+				player.inventory.toIterable().toStream()// ,
+//				(if (!ACCESSORIES_INSTALLED) null else AccessoriesCapability.get(player)?.run { allEquipped.stream().map { it.stack } }) ?: Stream.empty()
+//			)
 				.filter { !it.isEmpty }
 				.map { it.copy() }
 				.toList(),
@@ -116,20 +112,20 @@ object SavePoint : ModInitializer {
 			newPlayer.experienceLevel = getKeptXpLevels(oldPlayer)
 			newPlayer.experienceProgress = oldPlayer[SAVE_STATE]?.experienceProgress?.coerceIn(0f, oldPlayer.experienceProgress) ?: 0f
 		}
-		if (ACCESSORIES_INSTALLED) {
-			OnDropCallback.EVENT.register { rule, stack, slotRef, _ ->
-				accessoriesKept = false
-				if (rule != DropRule.DEFAULT) return@register rule
-				val player = slotRef.entity() as? ServerPlayerEntity ?: return@register rule
-				val savedDirty = getDirtyOrSet(player) ?: return@register rule
-				val kept = getAmountKept(stack, savedDirty)
-				if (kept == 0) return@register rule
-				if (kept < stack.count) {
-					slotRef.stack = stack.split(kept)
-					accessoriesKept = true
-				}
-				DropRule.KEEP
-			}
-		}
+//		if (ACCESSORIES_INSTALLED) {
+//			OnDropCallback.EVENT.register { rule, stack, slotRef, _ ->
+//				accessoriesKept = false
+//				if (rule != DropRule.DEFAULT) return@register rule
+//				val player = slotRef.entity() as? ServerPlayerEntity ?: return@register rule
+//				val savedDirty = getDirtyOrSet(player) ?: return@register rule
+//				val kept = getAmountKept(stack, savedDirty)
+//				if (kept == 0) return@register rule
+//				if (kept < stack.count) {
+//					slotRef.stack = stack.split(kept)
+//					accessoriesKept = true
+//				}
+//				DropRule.KEEP
+//			}
+//		}
 	}
 }

@@ -6,8 +6,7 @@
     "PlayerEntityMixin",
     "PlayerInventoryMixin",
     "RespawnAnchorBlockMixin",
-    "ServerPlayerEntityMixin",
-    "accessories.AccessoriesEventHandlerMixin"
+    "ServerPlayerEntityMixin"
   ],
   "plugin": "archives.tater.savepoint.SavePointMixinConfigPlugin",
   "injectors": {

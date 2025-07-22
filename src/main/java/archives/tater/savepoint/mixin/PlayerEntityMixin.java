@@ -17,7 +17,7 @@ public abstract class PlayerEntityMixin extends Entity {
     }
 
     @ModifyExpressionValue(
-            method = "getXpToDrop",
+            method = "getExperienceToDrop",
             at = @At(value = "FIELD", target = "Lnet/minecraft/entity/player/PlayerEntity;experienceLevel:I")
     )
     private int onlyDropRemainder(int original) {

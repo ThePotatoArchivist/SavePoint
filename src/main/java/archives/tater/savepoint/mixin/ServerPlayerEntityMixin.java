@@ -2,10 +2,8 @@ package archives.tater.savepoint.mixin;
 
 import archives.tater.savepoint.SavePoint;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.server.network.ServerPlayerEntity.Respawn;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -18,8 +16,8 @@ public abstract class ServerPlayerEntityMixin {
 			method = "setSpawnPoint",
 			at = @At("TAIL")
 	)
-	private void saveInventory(RegistryKey<World> dimension, @Nullable BlockPos pos, float angle, boolean forced, boolean sendMessage, CallbackInfo ci) {
-		if (pos != null && sendMessage)
+	private void saveInventory(@Nullable Respawn respawn, boolean sendMessage, CallbackInfo ci) {
+		if (respawn != null && sendMessage)
 			SavePoint.saveInventory((ServerPlayerEntity) (Object) this);
 	}
 
