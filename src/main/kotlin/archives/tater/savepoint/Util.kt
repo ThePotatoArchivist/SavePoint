@@ -21,16 +21,6 @@ fun <T> createAttachment(id: Identifier, init: AttachmentRegistry.Builder<T>.() 
 operator fun <T> Component<T>.component1(): ComponentType<T> = type
 operator fun <T> Component<T>.component2(): T = value
 
-operator fun Inventory.iterator() = object : Iterator<ItemStack> {
-    var slot = 0
-    override fun hasNext(): Boolean = slot < this@iterator.size()
-    override fun next(): ItemStack = getStack(slot++)
-}
-
-fun Inventory.toIterable() = object : Iterable<ItemStack> {
-    override fun iterator(): Iterator<ItemStack> = this@toIterable.iterator()
-}
-
 fun <T> Iterable<T>.toStream(parallel: Boolean = false): Stream<T> = StreamSupport.stream(spliterator(), parallel)
 
 operator fun <T: Any> AttachmentTarget.get(type: AttachmentType<T>) = getAttached(type)
