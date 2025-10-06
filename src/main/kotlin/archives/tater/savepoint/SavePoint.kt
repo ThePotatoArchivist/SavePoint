@@ -47,7 +47,7 @@ object SavePoint : ModInitializer {
 	fun saveInventory(player: ServerPlayerEntity) {
 		player[SAVE_STATE] = SaveState(
 //			Stream.concat(
-				player.inventory.toIterable().toStream()// ,
+				player.inventory.toStream()// ,
 //				(if (!ACCESSORIES_INSTALLED) null else AccessoriesCapability.get(player)?.run { allEquipped.stream().map { it.stack } }) ?: Stream.empty()
 //			)
 				.filter { !it.isEmpty }
