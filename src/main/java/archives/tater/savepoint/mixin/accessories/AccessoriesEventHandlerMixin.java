@@ -1,15 +1,26 @@
 package archives.tater.savepoint.mixin.accessories;
 
-//@SuppressWarnings("UnstableApiUsage")
-//@Mixin(AccessoriesEventHandler.class)
-//public class AccessoriesEventHandlerMixin {
-//    @ModifyReturnValue(
-//            method = "dropStack",
-//            at = @At(value = "RETURN", ordinal = 1)
-//    )
-//    private static ItemStack keepItem(ItemStack original, @Local ItemStack stack) {
-//        if (!SavePoint.accessoriesKept) return original;
-//        SavePoint.accessoriesKept = false;
-//        return stack;
-//    }
-//}
+import archives.tater.savepoint.SavePoint;
+
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.llamalad7.mixinextras.sugar.Local;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+
+import net.minecraft.item.ItemStack;
+
+import io.wispforest.accessories.impl.event.AccessoriesEventHandler;
+
+@SuppressWarnings("UnstableApiUsage")
+@Mixin(AccessoriesEventHandler.class)
+public class AccessoriesEventHandlerMixin {
+    @ModifyReturnValue(
+            method = "dropStack",
+            at = @At(value = "RETURN", ordinal = 1)
+    )
+    private static ItemStack keepItem(ItemStack original, @Local ItemStack stack) {
+        if (!SavePoint.accessoriesKept) return original;
+        SavePoint.accessoriesKept = false;
+        return stack;
+    }
+}
