@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.attachment.v1.AttachmentType
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.component.ComponentType
+import net.minecraft.entity.ItemEntity
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.ItemStack
 import net.minecraft.registry.RegistryKeys
@@ -18,6 +19,7 @@ import io.wispforest.accessories.api.AccessoriesCapability
 import io.wispforest.accessories.api.events.DropRule
 import io.wispforest.accessories.api.events.OnDropCallback
 import org.slf4j.LoggerFactory
+import java.util.function.Consumer
 import java.util.stream.Stream
 import kotlin.math.min
 
@@ -28,9 +30,6 @@ object SavePoint : ModInitializer {
 	fun id(path: String): Identifier = Identifier.of(MOD_ID, path)
 
     private val logger = LoggerFactory.getLogger(MOD_ID)
-
-	@JvmField
-	internal var accessoriesKept = false
 
 	val RESTORE_IGNORED_TAG: TagKey<ComponentType<*>> = TagKey.of(RegistryKeys.DATA_COMPONENT_TYPE, id("restore_ignored"))
 
@@ -55,7 +54,8 @@ object SavePoint : ModInitializer {
 				(if (!ACCESSORIES_INSTALLED) null else AccessoriesCapability.get(player)?.run { allEquipped.stream().map { it.stack } }) ?: Stream.empty()
 			)
 				.filter { !it.isEmpty }
-				.map { it.copy() }
+                .map { it.copy() }
+                .flatMap(::flatContents)
 				.toList(),
 			player.experienceLevel,
 			player.experienceProgress,
@@ -97,6 +97,28 @@ object SavePoint : ModInitializer {
 		}
 	}
 
+    @JvmStatic
+    fun processStackResult(stack: ItemStack, savedDirty: List<ItemStack>, drop: (ItemStack) -> ItemEntity, result: Consumer<ItemStack>): ItemEntity {
+        modifyContents(stack) { containedStack ->
+            processStack(containedStack, savedDirty, drop)
+        }
+        result.accept(stack.split(getAmountKept(stack, savedDirty)))
+        return drop(stack)
+    }
+
+    /**
+     * @return the kept stack
+     */
+    @JvmStatic
+    fun processStack(stack: ItemStack, savedDirty: List<ItemStack>, drop: (ItemStack) -> Any?): ItemStack {
+        modifyContents(stack) { containedStack ->
+            processStack(containedStack, savedDirty, drop)
+        }
+        return stack.split(getAmountKept(stack, savedDirty)).also {
+            drop(stack)
+        }
+    }
+
 	@JvmStatic
 	fun getKeptXpLevels(player: PlayerEntity) =
 		player[SAVE_STATE]?.experienceLevel?.coerceIn(0, player.experienceLevel) ?: 0 // Player cannot gain xp by dying
@@ -118,16 +140,10 @@ object SavePoint : ModInitializer {
 		}
 		if (ACCESSORIES_INSTALLED) {
 			OnDropCallback.EVENT.register { rule, stack, slotRef, _ ->
-				accessoriesKept = false
 				if (rule != DropRule.DEFAULT) return@register rule
 				val player = slotRef.entity() as? ServerPlayerEntity ?: return@register rule
 				val savedDirty = getDirtyOrSet(player) ?: return@register rule
-				val kept = getAmountKept(stack, savedDirty)
-				if (kept == 0) return@register rule
-				if (kept < stack.count) {
-					slotRef.stack = stack.split(kept)
-					accessoriesKept = true
-				}
+                slotRef.stack = processStack(stack, savedDirty) { stack -> player.dropItem(stack, true, false) }
 				DropRule.KEEP
 			}
 		}
