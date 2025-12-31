@@ -6,6 +6,7 @@
     "minecraft:writable_book_content",
     "minecraft:bundle_contents",
     "minecraft:container",
-    { "id": "bundle-backportish:bundle_selection", "required": false }
+    { "id": "bundle-backportish:bundle_selection", "required": false },
+    { "id": "omnicrossbow:crossbow_full", "required":  false }
   ]
 }
