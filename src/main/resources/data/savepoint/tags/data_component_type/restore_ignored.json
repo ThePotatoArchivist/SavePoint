@@ -7,6 +7,9 @@
     "minecraft:bundle_contents",
     "minecraft:container",
     { "id": "bundle-backportish:bundle_selection", "required": false },
-    { "id": "omnicrossbow:crossbow_full", "required":  false }
+    { "id": "omnicrossbow:crossbow_full", "required":  false },
+    { "id": "enchancement:toggleable_passive", "required": false },
+    { "id": "enchancement:brimstone_uuid", "required": false },
+    { "id": "enchancement:brimstone_damage", "required": false }
   ]
 }
