@@ -4,6 +4,8 @@
     "minecraft:charged_projectiles",
     "minecraft:map_decorations",
     "minecraft:writable_book_content",
+    "minecraft:bundle_contents",
+    "minecraft:container",
     { "id": "bundle-backportish:bundle_selection", "required": false }
   ]
 }

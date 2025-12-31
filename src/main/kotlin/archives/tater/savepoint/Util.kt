@@ -33,8 +33,14 @@ fun Inventory.toIterable() = object : Iterable<ItemStack> {
 
 fun <T> Iterable<T>.toStream(parallel: Boolean = false): Stream<T> = StreamSupport.stream(spliterator(), parallel)
 
+fun <T> streamOf(): Stream<T> = Stream.empty()
+fun <T> streamOf(value: T): Stream<T> = Stream.of(value)
+fun <T> streamOf(vararg values: T): Stream<T> = Stream.of(*values)
+
 operator fun <T: Any> AttachmentTarget.get(type: AttachmentType<T>) = getAttached(type)
 operator fun <T: Any> AttachmentTarget.set(type: AttachmentType<T>, value: T?) = setAttached(type, value)
 
 infix fun ComponentType<*>.isIn(tag: TagKey<ComponentType<*>>) =
     Registries.DATA_COMPONENT_TYPE.getEntry(this).isIn(tag)
+
+fun <T> ItemStack.reset(componentType: ComponentType<T>): T? = set(componentType, item.components[componentType])
