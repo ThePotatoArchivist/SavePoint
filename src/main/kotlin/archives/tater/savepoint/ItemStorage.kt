@@ -8,7 +8,7 @@ import java.util.stream.Stream
 
 fun removeContents(stack: ItemStack): Stream<ItemStack>? =
     stack.reset(DataComponents.BUNDLE_CONTENTS)?.itemCopyStream()
-        ?: stack.reset(DataComponents.CONTAINER)?.stream()
+        ?: stack.reset(DataComponents.CONTAINER)?.allItemsCopyStream()
 
 fun flatContents(stack: ItemStack): Stream<ItemStack> = removeContents(stack)
     .let { it ?: return streamOf(stack) }
@@ -21,13 +21,13 @@ fun modifyContents(stack: ItemStack, transform: (ItemStack) -> ItemStack) {
         stack.has(DataComponents.BUNDLE_CONTENTS) ->
             stack.update(DataComponents.BUNDLE_CONTENTS, BundleContents.EMPTY) {
                 BundleContents.Mutable(BundleContents.EMPTY).apply {
-                    for (stack in it.items())
+                    for (stack in it.itemCopyStream())
                         tryInsert(transform(stack))
                 }.toImmutable()
             }
         stack.has(DataComponents.CONTAINER) ->
             stack.update(DataComponents.CONTAINER, ItemContainerContents.EMPTY) { container ->
-                ItemContainerContents.fromItems(container.stream().map {
+                ItemContainerContents.fromItems(container.allItemsCopyStream().map {
                     if (it.isEmpty) it else transform(it)
                 }.toList())
             }

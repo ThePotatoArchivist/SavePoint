@@ -15,15 +15,10 @@ import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.portal.TeleportTransition
-import io.wispforest.accessories.api.AccessoriesCapability
-import io.wispforest.accessories.api.events.DropRule
-import io.wispforest.accessories.api.events.OnDropCallback
 import org.slf4j.LoggerFactory
 import java.util.function.Consumer
-import java.util.stream.Stream
 import kotlin.math.min
 
-@Suppress("UnstableApiUsage")
 object SavePoint : ModInitializer {
 	const val MOD_ID = "savepoint"
 
@@ -49,10 +44,10 @@ object SavePoint : ModInitializer {
 	@JvmStatic
 	fun saveInventory(player: ServerPlayer) {
 		player[SAVE_STATE] = SaveState(
-			Stream.concat(
-				player.inventory.toStream(),
+			/*Stream.concat(*/
+				player.inventory.toStream()/*,
 				(if (!ACCESSORIES_INSTALLED) null else AccessoriesCapability.get(player)?.run { allEquipped.stream().map { it.stack } }) ?: Stream.empty()
-			)
+			)*/
 				.filter { !it.isEmpty }
                 .map { it.copy() }
                 .flatMap(::flatContents)
@@ -138,14 +133,14 @@ object SavePoint : ModInitializer {
 			newPlayer.experienceLevel = getKeptXpLevels(oldPlayer)
 			newPlayer.experienceProgress = oldPlayer[SAVE_STATE]?.experienceProgress?.coerceIn(0f, oldPlayer.experienceProgress) ?: 0f
 		}
-		if (ACCESSORIES_INSTALLED) {
-			OnDropCallback.EVENT.register { rule, stack, slotRef, _ ->
-				if (rule != DropRule.DEFAULT) return@register rule
-				val player = slotRef.entity() as? ServerPlayer ?: return@register rule
-				val savedDirty = getDirtyOrSet(player) ?: return@register rule
-                slotRef.stack = processStack(stack, savedDirty) { stack -> player.drop(stack, true, false) }
-				DropRule.KEEP
-			}
-		}
+//		if (ACCESSORIES_INSTALLED) {
+//			OnDropCallback.EVENT.register { rule, stack, slotRef, _ ->
+//				if (rule != DropRule.DEFAULT) return@register rule
+//				val player = slotRef.entity() as? ServerPlayer ?: return@register rule
+//				val savedDirty = getDirtyOrSet(player) ?: return@register rule
+//                slotRef.stack = processStack(stack, savedDirty) { stack -> player.drop(stack, true, false) }
+//				DropRule.KEEP
+//			}
+//		}
 	}
 }
