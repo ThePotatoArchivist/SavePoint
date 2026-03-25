@@ -14,6 +14,7 @@ import net.minecraft.tags.TagKey
 import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.ItemStackTemplate
 import net.minecraft.world.level.portal.TeleportTransition
 import org.slf4j.LoggerFactory
 import java.util.function.Consumer
@@ -51,6 +52,7 @@ object SavePoint : ModInitializer {
 				.filter { !it.isEmpty }
                 .map { it.copy() }
                 .flatMap(::flatContents)
+				.map { ItemStackTemplate.fromNonEmptyStack(it) }
 				.toList(),
 			player.experienceLevel,
 			player.experienceProgress,
@@ -65,7 +67,7 @@ object SavePoint : ModInitializer {
 		return player[SAVE_STATE]
 			?.items
 			?.takeUnless { it.isEmpty() }
-			?.map(ItemStack::copy)
+			?.map { it.create() }
 			?.also {
 				player[SAVED_INVENTORY_DIRTY] = it
 			}
