@@ -2,7 +2,7 @@ package archives.tater.savepoint
 
 import com.mojang.serialization.Codec
 import com.mojang.serialization.codecs.RecordCodecBuilder
-import net.minecraft.item.ItemStack
+import net.minecraft.world.item.ItemStack
 
 @JvmRecord
 data class SaveState(

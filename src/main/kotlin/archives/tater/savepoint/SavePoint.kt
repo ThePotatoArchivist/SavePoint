@@ -5,16 +5,16 @@ import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.fabricmc.loader.api.FabricLoader
-import net.minecraft.component.ComponentType
-import net.minecraft.entity.ItemEntity
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.item.ItemStack
-import net.minecraft.registry.RegistryKeys
-import net.minecraft.registry.tag.TagKey
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
-import net.minecraft.util.Identifier
-import net.minecraft.world.TeleportTarget
+import net.minecraft.core.component.DataComponentType
+import net.minecraft.core.registries.Registries
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.Identifier
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.tags.TagKey
+import net.minecraft.world.entity.item.ItemEntity
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.level.portal.TeleportTransition
 import io.wispforest.accessories.api.AccessoriesCapability
 import io.wispforest.accessories.api.events.DropRule
 import io.wispforest.accessories.api.events.OnDropCallback
@@ -27,11 +27,11 @@ import kotlin.math.min
 object SavePoint : ModInitializer {
 	const val MOD_ID = "savepoint"
 
-	fun id(path: String): Identifier = Identifier.of(MOD_ID, path)
+	fun id(path: String): Identifier = Identifier.fromNamespaceAndPath(MOD_ID, path)
 
     private val logger = LoggerFactory.getLogger(MOD_ID)
 
-	val RESTORE_IGNORED_TAG: TagKey<ComponentType<*>> = TagKey.of(RegistryKeys.DATA_COMPONENT_TYPE, id("restore_ignored"))
+	val RESTORE_IGNORED_TAG: TagKey<DataComponentType<*>> = TagKey.create(Registries.DATA_COMPONENT_TYPE, id("restore_ignored"))
 
 	@JvmField
 	val SAVE_STATE: AttachmentType<SaveState> = createAttachment(id("save_state")) {
@@ -47,7 +47,7 @@ object SavePoint : ModInitializer {
 	val ACCESSORIES_INSTALLED = FabricLoader.getInstance().isModLoaded("accessories")
 
 	@JvmStatic
-	fun saveInventory(player: ServerPlayerEntity) {
+	fun saveInventory(player: ServerPlayer) {
 		player[SAVE_STATE] = SaveState(
 			Stream.concat(
 				player.inventory.toStream(),
@@ -61,11 +61,11 @@ object SavePoint : ModInitializer {
 			player.experienceProgress,
 		)
 
-		player.sendMessage(Text.translatableWithFallback(INVENTORY_SAVED_TEXT, "Inventory Saved"))
+		player.sendSystemMessage(Component.translatableWithFallback(INVENTORY_SAVED_TEXT, "Inventory Saved"))
 	}
 
 	@JvmStatic
-	fun getDirtyOrSet(player: ServerPlayerEntity): List<ItemStack>? {
+	fun getDirtyOrSet(player: ServerPlayer): List<ItemStack>? {
 		player[SAVED_INVENTORY_DIRTY]?.let { return it }
 		return player[SAVE_STATE]
 			?.items
@@ -77,9 +77,9 @@ object SavePoint : ModInitializer {
 	}
 
 	fun stacksMatch(first: ItemStack, second: ItemStack): Boolean =
-		ItemStack.areItemsAndComponentsEqual(first, second) ||
-		ItemStack.areItemsEqual(first, second) &&
-				(first.components.types + second.components.types).all { it isIn RESTORE_IGNORED_TAG || first[it] == second[it] }
+		ItemStack.isSameItemSameComponents(first, second) ||
+		ItemStack.isSameItem(first, second) &&
+				(first.components.keySet() + second.components.keySet()).all { it isIn RESTORE_IGNORED_TAG || first[it] == second[it] }
 
 	/**
 	 * The stacks in `savedDirty` are mutated
@@ -91,7 +91,7 @@ object SavePoint : ModInitializer {
 		return savedDirty.sumOf { savedStack ->
 			if (amountDropped == 0 || !stacksMatch(stack, savedStack)) 0
 			else min(amountDropped, savedStack.count).also {
-				savedStack.decrement(it)
+				savedStack.shrink(it)
 				amountDropped -= it
 			}
 		}
@@ -120,12 +120,12 @@ object SavePoint : ModInitializer {
     }
 
 	@JvmStatic
-	fun getKeptXpLevels(player: PlayerEntity) =
+	fun getKeptXpLevels(player: Player) =
 		player[SAVE_STATE]?.experienceLevel?.coerceIn(0, player.experienceLevel) ?: 0 // Player cannot gain xp by dying
 
 	@JvmStatic
-	fun checkSpawnpointMissing(player: ServerPlayerEntity) {
-		if (player.getRespawnTarget(false, TeleportTarget.NO_OP).missingRespawnBlock)
+	fun checkSpawnpointMissing(player: ServerPlayer) {
+		if (player.findRespawnPositionAndUseSpawnBlock(false, TeleportTransition.DO_NOTHING).missingRespawnBlock)
 			player.removeAttached(SAVE_STATE)
 	}
 
@@ -134,16 +134,16 @@ object SavePoint : ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 		ServerPlayerEvents.COPY_FROM.register { oldPlayer, newPlayer, _ ->
-			newPlayer.inventory.clone(oldPlayer.inventory) // Make sure this doesn't cause problems
+			newPlayer.inventory.replaceWith(oldPlayer.inventory) // Make sure this doesn't cause problems
 			newPlayer.experienceLevel = getKeptXpLevels(oldPlayer)
 			newPlayer.experienceProgress = oldPlayer[SAVE_STATE]?.experienceProgress?.coerceIn(0f, oldPlayer.experienceProgress) ?: 0f
 		}
 		if (ACCESSORIES_INSTALLED) {
 			OnDropCallback.EVENT.register { rule, stack, slotRef, _ ->
 				if (rule != DropRule.DEFAULT) return@register rule
-				val player = slotRef.entity() as? ServerPlayerEntity ?: return@register rule
+				val player = slotRef.entity() as? ServerPlayer ?: return@register rule
 				val savedDirty = getDirtyOrSet(player) ?: return@register rule
-                slotRef.stack = processStack(stack, savedDirty) { stack -> player.dropItem(stack, true, false) }
+                slotRef.stack = processStack(stack, savedDirty) { stack -> player.drop(stack, true, false) }
 				DropRule.KEEP
 			}
 		}

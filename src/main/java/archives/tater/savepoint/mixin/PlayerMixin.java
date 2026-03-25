@@ -1,0 +1,28 @@
+package archives.tater.savepoint.mixin;
+
+import archives.tater.savepoint.SavePoint;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+
+@SuppressWarnings("UnstableApiUsage")
+@Mixin(Player.class)
+public abstract class PlayerMixin extends Entity {
+    public PlayerMixin(EntityType<?> type, Level world) {
+        super(type, world);
+    }
+
+    @ModifyExpressionValue(
+            method = "getBaseExperienceReward",
+            at = @At(value = "FIELD", target = "Lnet/minecraft/world/entity/player/Player;experienceLevel:I")
+    )
+    private int onlyDropRemainder(int original) {
+        var saveState = getAttached(SavePoint.SAVE_STATE);
+        if (saveState == null) return original;
+        return original - SavePoint.getKeptXpLevels((Player) (Object) this);
+    }
+}
