@@ -14,7 +14,7 @@ import net.minecraft.util.Identifier
 import java.util.stream.Stream
 import java.util.stream.StreamSupport
 
-fun <T> createAttachment(id: Identifier, init: AttachmentRegistry.Builder<T>.() -> Unit): AttachmentType<T> =
+fun <T: Any> createAttachment(id: Identifier, init: AttachmentRegistry.Builder<T>.() -> Unit): AttachmentType<T> =
     AttachmentRegistry.create(id) { it.init() }
 
 operator fun <T> Component<T>.component1(): ComponentType<T> = type
