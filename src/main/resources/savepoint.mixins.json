@@ -8,7 +8,6 @@
     "RespawnAnchorBlockMixin",
     "ServerPlayerMixin"
   ],
-  "plugin": "archives.tater.savepoint.SavePointMixinConfigPlugin",
   "injectors": {
     "defaultRequire": 1
   }
