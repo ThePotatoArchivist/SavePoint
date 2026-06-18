@@ -9,6 +9,7 @@ import net.minecraft.component.ComponentType
 import net.minecraft.entity.ItemEntity
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.ItemStack
+import net.minecraft.registry.Registries
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.registry.tag.TagKey
 import net.minecraft.server.network.ServerPlayerEntity
@@ -79,7 +80,7 @@ object SavePoint : ModInitializer {
 	fun stacksMatch(first: ItemStack, second: ItemStack): Boolean =
 		ItemStack.areItemsAndComponentsEqual(first, second) ||
 		ItemStack.areItemsEqual(first, second) &&
-				(first.components.types + second.components.types).all { it isIn RESTORE_IGNORED_TAG || first[it] == second[it] }
+				(first.components.types + second.components.types).all { it isIn RESTORE_IGNORED_TAG || Registries.DATA_COMPONENT_TYPE.getId(it)!!.namespace != Identifier.DEFAULT_NAMESPACE || first[it] == second[it] }
 
 	/**
 	 * The stacks in `savedDirty` are mutated
