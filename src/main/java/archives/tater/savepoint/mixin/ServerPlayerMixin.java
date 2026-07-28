@@ -19,8 +19,8 @@ public abstract class ServerPlayerMixin {
 			method = "setRespawnPosition",
 			at = @At("TAIL")
 	)
-	private void saveInventory(@Nullable RespawnConfig respawn, boolean sendMessage, CallbackInfo ci) {
-		if (respawn != null && sendMessage)
+	private void saveInventory(@Nullable RespawnConfig respawnConfig, boolean showMessage, CallbackInfo ci) {
+		if (respawnConfig != null && showMessage)
 			SavePoint.saveInventory((ServerPlayer) (Object) this);
 	}
 
@@ -29,7 +29,7 @@ public abstract class ServerPlayerMixin {
 			method = "die",
 			at = @At("HEAD")
 	)
-	private void clearIfSpawnpointMissing(DamageSource damageSource, CallbackInfo ci) {
+	private void clearIfSpawnpointMissing(DamageSource source, CallbackInfo ci) {
 		SavePoint.checkSpawnpointMissing((ServerPlayer) (Object) this);
 	}
 }

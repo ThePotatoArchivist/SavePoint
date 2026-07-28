@@ -17,6 +17,8 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.ItemStackTemplate
 import net.minecraft.world.level.gamerules.GameRules
 import net.minecraft.world.level.portal.TeleportTransition
+import eu.pb4.trinkets.api.TrinketDropRule
+import eu.pb4.trinkets.api.event.TrinketDropCallback
 import org.slf4j.LoggerFactory
 import kotlin.math.min
 
@@ -40,15 +42,12 @@ object SavePoint : ModInitializer {
 
 	const val INVENTORY_SAVED_TEXT = "savepoint.inventory_saved"
 
-	val ACCESSORIES_INSTALLED = FabricLoader.getInstance().isModLoaded("accessories")
+	val TRINKETS_INSTALLED = FabricLoader.getInstance().isModLoaded("trinkets_updated")
 
 	@JvmStatic
 	fun saveInventory(player: ServerPlayer) {
 		player[SAVE_STATE] = SaveState(
-			/*Stream.concat(*/
-				player.inventory.toStream()/*,
-				(if (!ACCESSORIES_INSTALLED) null else AccessoriesCapability.get(player)?.run { allEquipped.stream().map { it.stack } }) ?: Stream.empty()
-			)*/
+			player.inventory.toStream()
 				.filter { !it.isEmpty }
                 .map { it.copy() }
                 .flatMap(::flatContents)
@@ -99,21 +98,30 @@ object SavePoint : ModInitializer {
 
     /**
 	 * Modifies stack
+	 * @return the dropped stack, or null if the whole stack should be dropped
      */
-	@JvmOverloads
     @JvmStatic
-    fun processStack(stack: ItemStack, savedDirty: List<ItemStack>, drop: (ItemStack) -> ItemEntity, setKept: Runnable = {}): ItemEntity {
-        modifyContents(stack) { containedStack ->
-            processStack(containedStack, savedDirty, drop, setKept)
-			containedStack
-        }
+    fun processStack(stack: ItemStack, savedDirty: List<ItemStack>, drop: (ItemStack) -> ItemEntity?): ItemStack? {
 		val amountDropped = getAmountDropped(stack, savedDirty)
+		if (amountDropped >= stack.count) return null
 
-		if (amountDropped >= stack.count) return drop(stack)
+		modifyContents(stack) { containedStack ->
+			processAndDropStack(containedStack, savedDirty, drop)
+			containedStack
+		}
 
-		setKept.run()
-		return drop(stack.split(amountDropped))
+		return stack.split(amountDropped)
     }
+
+	/**
+	 * Modifies stack
+	 * @return true if the stack was split, false if the whole stack should be dropped
+	 */
+	fun processAndDropStack(stack: ItemStack, savedDirty: List<ItemStack>, drop: (ItemStack) -> ItemEntity?): Boolean {
+		val dropped = processStack(stack, savedDirty, drop) ?: return false
+		drop(dropped)
+		return true
+	}
 
 	@JvmStatic
 	fun getKeptXpLevels(player: Player) =
@@ -136,14 +144,15 @@ object SavePoint : ModInitializer {
 			newPlayer.experienceLevel = getKeptXpLevels(oldPlayer)
 			newPlayer.experienceProgress = oldPlayer[SAVE_STATE]?.experienceProgress?.coerceIn(0f, oldPlayer.experienceProgress) ?: 0f
 		}
-//		if (ACCESSORIES_INSTALLED) {
-//			OnDropCallback.EVENT.register { rule, stack, slotRef, _ ->
-//				if (rule != DropRule.DEFAULT) return@register rule
-//				val player = slotRef.entity() as? ServerPlayer ?: return@register rule
-//				val savedDirty = getDirtyOrSet(player) ?: return@register rule
-//                slotRef.stack = processStack(stack, savedDirty) { stack -> player.drop(stack, true, false) }
-//				DropRule.KEEP
-//			}
-//		}
+		if (TRINKETS_INSTALLED) {
+			TrinketDropCallback.EVENT.register { rule, stack, _, entity ->
+				if (entity !is ServerPlayer || rule != TrinketDropRule.DEFAULT) return@register rule
+				val savedDirty = getDirtyOrSet(entity) ?: return@register TrinketDropRule.DEFAULT
+				if (processAndDropStack(stack, savedDirty) { entity.drop(it, true, false) })
+					TrinketDropRule.KEEP
+				else
+					TrinketDropRule.DEFAULT
+			}
+		}
 	}
 }

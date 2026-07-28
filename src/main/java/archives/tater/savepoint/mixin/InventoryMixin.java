@@ -20,6 +20,8 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.server.level.ServerPlayer;
 
+import org.jspecify.annotations.Nullable;
+
 @Mixin(Inventory.class)
 public class InventoryMixin {
     @Shadow @Final public Player player;
@@ -37,20 +39,23 @@ public class InventoryMixin {
             method = "dropAll",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;drop(Lnet/minecraft/world/item/ItemStack;ZZ)Lnet/minecraft/world/entity/item/ItemEntity;")
     )
-    private ItemEntity processSaved(Player instance, ItemStack itemStack, boolean randomly, boolean retainOwnership, Operation<ItemEntity> thrownFromHand, @Share("keptItem") LocalBooleanRef keptItem) {
+    private @Nullable ItemEntity processSaved(Player instance, ItemStack itemStack, boolean randomly, boolean thrownFromHand, Operation<@Nullable ItemEntity> original, @Share("keptItem") LocalBooleanRef keptItem) {
         var savedDirty = player.getAttached(SavePoint.SAVED_INVENTORY_DIRTY);
         keptItem.set(false);
-        if (savedDirty == null) {
-            return thrownFromHand.call(instance, itemStack, randomly, retainOwnership);
-        }
-        return SavePoint.processStack(itemStack, savedDirty, droppedStack -> thrownFromHand.call(instance, droppedStack, randomly, retainOwnership), () -> keptItem.set(true));
+        if (savedDirty == null) return original.call(instance, itemStack, randomly, thrownFromHand);
+
+        var dropped = SavePoint.processStack(itemStack, savedDirty, droppedStack -> original.call(instance, droppedStack, randomly, thrownFromHand));
+        if (dropped == null) return original.call(instance, itemStack, randomly, thrownFromHand);
+
+        keptItem.set(true);
+        return original.call(instance, dropped, randomly, thrownFromHand);
     }
 
     @WrapOperation(
             method = "dropAll",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/core/NonNullList;set(ILjava/lang/Object;)Ljava/lang/Object;")
     )
-    private <E> E setKept(NonNullList<E> instance, int index, E element, Operation<E> original, @Share("keptItem") LocalBooleanRef keptItem) {
+    private <E> @Nullable E setKept(NonNullList<E> instance, int index, E element, Operation<E> original, @Share("keptItem") LocalBooleanRef keptItem) {
         return keptItem.get() ? null : original.call(instance, index, element);
     }
 }

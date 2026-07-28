@@ -3,11 +3,9 @@ package archives.tater.savepoint.mixin;
 import archives.tater.savepoint.SavePoint;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import com.llamalad7.mixinextras.sugar.Local;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Slice;
-
 import org.objectweb.asm.Opcodes;
 
 import net.minecraft.core.BlockPos;
@@ -18,6 +16,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.RespawnAnchorBlock;
+import net.minecraft.world.level.block.state.BlockState;
 
 @Mixin(value = RespawnAnchorBlock.class)
 public class RespawnAnchorBlockMixin {
@@ -28,7 +27,7 @@ public class RespawnAnchorBlockMixin {
             ),
             at = @At(value = "RETURN", ordinal = 0)
     )
-    private InteractionResult saveInventory(InteractionResult original, @Local(argsOnly = true) Level level, @Local(argsOnly = true) BlockPos pos, @Local(argsOnly = true) Player player) {
+    private InteractionResult saveInventory(InteractionResult original, final BlockState state, final Level level, final BlockPos pos, final Player player) {
         if (!(player instanceof ServerPlayer serverPlayer))
             return original;
         SavePoint.saveInventory(serverPlayer);
