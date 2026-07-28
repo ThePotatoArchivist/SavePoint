@@ -20,6 +20,8 @@ import net.minecraft.world.level.portal.TeleportTransition
 import eu.pb4.trinkets.api.TrinketDropRule
 import eu.pb4.trinkets.api.event.TrinketDropCallback
 import org.slf4j.LoggerFactory
+import java.util.stream.Stream
+import java.util.stream.StreamSupport
 import kotlin.math.min
 
 object SavePoint : ModInitializer {
@@ -47,7 +49,10 @@ object SavePoint : ModInitializer {
 	@JvmStatic
 	fun saveInventory(player: ServerPlayer) {
 		player[SAVE_STATE] = SaveState(
-			player.inventory.toStream()
+			Stream.concat(
+				player.inventory.toStream(),
+				if (TRINKETS_INSTALLED) player.trinkets.inventories.values.stream().flatMap { StreamSupport.stream(it.spliterator(), false) } else Stream.empty()
+			)
 				.filter { !it.isEmpty }
                 .map { it.copy() }
                 .flatMap(::flatContents)
@@ -138,15 +143,20 @@ object SavePoint : ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 		ServerPlayerEvents.COPY_FROM.register { oldPlayer, newPlayer, alive ->
-			if (alive || oldPlayer.level().gameRules.get(GameRules.KEEP_INVENTORY)) return@register
+			if (alive || oldPlayer.level().gameRules[GameRules.KEEP_INVENTORY]) return@register
 
 			newPlayer.inventory.replaceWith(oldPlayer.inventory)
 			newPlayer.experienceLevel = getKeptXpLevels(oldPlayer)
 			newPlayer.experienceProgress = oldPlayer[SAVE_STATE]?.experienceProgress?.coerceIn(0f, oldPlayer.experienceProgress) ?: 0f
 		}
 		if (TRINKETS_INSTALLED) {
-			TrinketDropCallback.EVENT.register { rule, stack, _, entity ->
-				if (entity !is ServerPlayer || rule != TrinketDropRule.DEFAULT) return@register rule
+			TrinketDropCallback.EVENT.register { rule, stack, access, entity ->
+				if (entity !is ServerPlayer
+					|| rule != TrinketDropRule.DEFAULT
+					|| access.slotType().dropRule() != TrinketDropRule.DEFAULT
+					|| entity.level().gameRules[GameRules.KEEP_INVENTORY]
+					) return@register rule
+
 				val savedDirty = getDirtyOrSet(entity) ?: return@register TrinketDropRule.DEFAULT
 				if (processAndDropStack(stack, savedDirty) { entity.drop(it, true, false) })
 					TrinketDropRule.KEEP
