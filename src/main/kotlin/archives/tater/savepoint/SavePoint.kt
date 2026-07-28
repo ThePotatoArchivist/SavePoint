@@ -15,6 +15,7 @@ import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.ItemStackTemplate
+import net.minecraft.world.level.gamerules.GameRules
 import net.minecraft.world.level.portal.TeleportTransition
 import org.slf4j.LoggerFactory
 import java.util.function.Consumer
@@ -27,7 +28,7 @@ object SavePoint : ModInitializer {
 
     private val logger = LoggerFactory.getLogger(MOD_ID)
 
-	val RESTORE_IGNORED_TAG: TagKey<DataComponentType<*>> = TagKey.create(Registries.DATA_COMPONENT_TYPE, id("restore_ignored"))
+	val RESTORE_COMPARE_TAG: TagKey<DataComponentType<*>> = TagKey.create(Registries.DATA_COMPONENT_TYPE, id("restore_compare"))
 
 	@JvmField
 	val SAVE_STATE: AttachmentType<SaveState> = createAttachment(id("save_state")) {
@@ -76,7 +77,7 @@ object SavePoint : ModInitializer {
 	fun stacksMatch(first: ItemStack, second: ItemStack): Boolean =
 		ItemStack.isSameItemSameComponents(first, second) ||
 		ItemStack.isSameItem(first, second) &&
-				(first.components.keySet() + second.components.keySet()).all { it isIn RESTORE_IGNORED_TAG || first[it] == second[it] }
+				(first.components.keySet() + second.components.keySet()).all { !(it isIn RESTORE_COMPARE_TAG) || first[it] == second[it] }
 
 	/**
 	 * The stacks in `savedDirty` are mutated
@@ -130,8 +131,10 @@ object SavePoint : ModInitializer {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
-		ServerPlayerEvents.COPY_FROM.register { oldPlayer, newPlayer, _ ->
-			newPlayer.inventory.replaceWith(oldPlayer.inventory) // Make sure this doesn't cause problems
+		ServerPlayerEvents.COPY_FROM.register { oldPlayer, newPlayer, alive ->
+			if (alive || oldPlayer.level().gameRules.get(GameRules.KEEP_INVENTORY)) return@register
+
+			newPlayer.inventory.replaceWith(oldPlayer.inventory)
 			newPlayer.experienceLevel = getKeptXpLevels(oldPlayer)
 			newPlayer.experienceProgress = oldPlayer[SAVE_STATE]?.experienceProgress?.coerceIn(0f, oldPlayer.experienceProgress) ?: 0f
 		}
