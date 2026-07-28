@@ -18,7 +18,6 @@ import net.minecraft.world.item.ItemStackTemplate
 import net.minecraft.world.level.gamerules.GameRules
 import net.minecraft.world.level.portal.TeleportTransition
 import org.slf4j.LoggerFactory
-import java.util.function.Consumer
 import kotlin.math.min
 
 object SavePoint : ModInitializer {
@@ -81,40 +80,39 @@ object SavePoint : ModInitializer {
 
 	/**
 	 * The stacks in `savedDirty` are mutated
-	 * @return the amount kept
+	 * @return the amount dropped from the stack
 	 */
 	@JvmStatic
-	fun getAmountKept(stack: ItemStack, savedDirty: List<ItemStack>): Int {
+	fun getAmountDropped(stack: ItemStack, savedDirty: List<ItemStack>): Int {
 		var amountDropped = stack.count
-		return savedDirty.sumOf { savedStack ->
-			if (amountDropped == 0 || !stacksMatch(stack, savedStack)) 0
-			else min(amountDropped, savedStack.count).also {
-				savedStack.shrink(it)
-				amountDropped -= it
+        for (savedStack in savedDirty) {
+			if (amountDropped <= 0) break
+
+			if (stacksMatch(stack, savedStack)) {
+				val change = min(amountDropped, savedStack.count)
+				savedStack.shrink(change)
+				amountDropped -= change
 			}
 		}
+		return amountDropped
 	}
 
-    @JvmStatic
-    fun processStackResult(stack: ItemStack, savedDirty: List<ItemStack>, drop: (ItemStack) -> ItemEntity, result: Consumer<ItemStack>): ItemEntity {
-        modifyContents(stack) { containedStack ->
-            processStack(containedStack, savedDirty, drop)
-        }
-        result.accept(stack.split(getAmountKept(stack, savedDirty)))
-        return drop(stack)
-    }
-
     /**
-     * @return the kept stack
+	 * Modifies stack
      */
+	@JvmOverloads
     @JvmStatic
-    fun processStack(stack: ItemStack, savedDirty: List<ItemStack>, drop: (ItemStack) -> Any?): ItemStack {
+    fun processStack(stack: ItemStack, savedDirty: List<ItemStack>, drop: (ItemStack) -> ItemEntity, setKept: Runnable = {}): ItemEntity {
         modifyContents(stack) { containedStack ->
-            processStack(containedStack, savedDirty, drop)
+            processStack(containedStack, savedDirty, drop, setKept)
+			containedStack
         }
-        return stack.split(getAmountKept(stack, savedDirty)).also {
-            drop(stack)
-        }
+		val amountDropped = getAmountDropped(stack, savedDirty)
+
+		if (amountDropped >= stack.count) return drop(stack)
+
+		setKept.run()
+		return drop(stack.split(amountDropped))
     }
 
 	@JvmStatic
