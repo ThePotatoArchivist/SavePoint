@@ -39,7 +39,7 @@ public abstract class EntityEquipmentMixin {
             method = "dropAll",
             at = @At(value = "INVOKE", target = "Ljava/util/Collection;iterator()Ljava/util/Iterator;")
     )
-    private Iterator<ItemStack> saveKeys(Collection<ItemStack> instance, Operation<Iterator<ItemStack>> original, @Share("slot") LocalRef<EquipmentSlot> slot) {
+    private Iterator<ItemStack> saveKeys(Collection<ItemStack> instance, Operation<Iterator<ItemStack>> original, @Share("slot") LocalRef<@Nullable EquipmentSlot> slot) {
         var entryIterator = items.entrySet().iterator();
         return new Iterator<>() {
             @Override
@@ -60,14 +60,17 @@ public abstract class EntityEquipmentMixin {
             method = "dropAll",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;drop(Lnet/minecraft/world/item/ItemStack;ZZ)Lnet/minecraft/world/entity/item/ItemEntity;")
     )
-    private @Nullable ItemEntity processSaved(LivingEntity instance, ItemStack itemStack, boolean randomly, boolean thrownFromHand, Operation<@Nullable ItemEntity> original, @Share("slot") LocalRef<EquipmentSlot> slot, @Share("keptSlots") LocalRef<@Nullable Set<EquipmentSlot>> keptSlots) {
+    private @Nullable ItemEntity processSaved(LivingEntity instance, ItemStack itemStack, boolean randomly, boolean thrownFromHand, Operation<@Nullable ItemEntity> original, @Share("slot") LocalRef<@Nullable EquipmentSlot> slotRef, @Share("keptSlots") LocalRef<@Nullable Set<EquipmentSlot>> keptSlots) {
+        var slot = slotRef.get();
+        if (slot == null) return original.call(instance, itemStack, randomly, thrownFromHand);
+
         var savedDirty = instance.getAttached(SavePoint.SAVED_INVENTORY_DIRTY);
         if (savedDirty == null) return original.call(instance, itemStack, randomly, thrownFromHand);
 
         var dropped = SavePoint.processStack(itemStack, savedDirty, droppedStack -> original.call(instance, droppedStack, randomly, thrownFromHand));
         if (dropped == null) return original.call(instance, itemStack, randomly, thrownFromHand);
 
-        getOrCreate(keptSlots, HashSet::new).add(slot.get());
+        getOrCreate(keptSlots, HashSet::new).add(slot);
         return original.call(instance, dropped, randomly, thrownFromHand);
     }
 
