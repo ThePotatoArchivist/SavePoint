@@ -15,8 +15,6 @@ import net.minecraft.world.item.ItemStack;
 
 import org.jspecify.annotations.Nullable;
 
-import static java.util.Objects.requireNonNullElse;
-
 @Mixin(EntityEquipment.class)
 public abstract class EntityEquipmentMixin {
 
@@ -28,9 +26,9 @@ public abstract class EntityEquipmentMixin {
         var savedDirty = instance.getAttached(SavePoint.SAVED_INVENTORY_DIRTY);
         if (savedDirty == null) return original.call(instance, itemStack, randomly, thrownFromHand);
 
-        var dropped = SavePoint.processStack(itemStack, savedDirty, droppedStack -> original.call(instance, droppedStack, randomly, thrownFromHand));
-        return original.call(instance, requireNonNullElse(dropped, itemStack), randomly, thrownFromHand);
-
+        var result = SavePoint.processStack(itemStack, savedDirty, droppedStack -> original.call(instance, droppedStack, randomly, thrownFromHand));
+        var dropped = result == null ? itemStack.split(itemStack.count()) : result;
+        return original.call(instance, dropped, randomly, thrownFromHand);
     }
 
     @WrapWithCondition(
