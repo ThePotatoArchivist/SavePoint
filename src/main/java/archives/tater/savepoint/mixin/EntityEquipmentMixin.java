@@ -58,7 +58,8 @@ public abstract class EntityEquipmentMixin {
 
     @WrapOperation(
             method = "dropAll",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;drop(Lnet/minecraft/world/item/ItemStack;ZZ)Lnet/minecraft/world/entity/item/ItemEntity;")
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;drop(Lnet/minecraft/world/item/ItemStack;ZZ)Lnet/minecraft/world/entity/item/ItemEntity;"),
+            order = 800
     )
     private @Nullable ItemEntity processSaved(LivingEntity instance, ItemStack itemStack, boolean randomly, boolean thrownFromHand, Operation<@Nullable ItemEntity> original, @Share("slot") LocalRef<@Nullable EquipmentSlot> slotRef, @Share("keptSlots") LocalRef<@Nullable Set<EquipmentSlot>> keptSlots) {
         var slot = slotRef.get();
