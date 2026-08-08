@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType
 import com.llamalad7.mixinextras.sugar.ref.LocalRef
+import net.minecraft.core.component.DataComponentHolder
 import net.minecraft.core.component.DataComponentType
 import net.minecraft.core.component.TypedDataComponent
 import net.minecraft.core.registries.BuiltInRegistries
@@ -36,3 +37,5 @@ infix fun DataComponentType<*>.isIn(tag: TagKey<DataComponentType<*>>) =
 fun <T: Any> ItemStack.reset(componentType: DataComponentType<T>): T? = set(componentType, item.components()[componentType])
 
 fun <T: Any> LocalRef<T?>.getOrCreate(create: () -> T): T = get() ?: create().also { set(it) }
+
+operator fun DataComponentHolder.contains(type: DataComponentType<*>) = has(type)

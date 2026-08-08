@@ -18,7 +18,7 @@ fun flatContents(stack: ItemStack): Stream<ItemStack> = removeContents(stack)
     .let { Stream.concat(it, streamOf(stack)) }
 
 fun modifyContents(stack: ItemStack, transform: (ItemStack) -> ItemStack) {
-    if (stack.has(DataComponents.BUNDLE_CONTENTS))
+    if (DataComponents.BUNDLE_CONTENTS in stack)
         stack.update(DataComponents.BUNDLE_CONTENTS, BundleContents.EMPTY) { contents ->
             BundleContents.Mutable(BundleContents.EMPTY).apply {
                 for (stack in contents.itemCopyStream())
@@ -28,17 +28,17 @@ fun modifyContents(stack: ItemStack, transform: (ItemStack) -> ItemStack) {
             }.toImmutable()
         }
 
-    if (stack.has(DataComponents.CONTAINER))
+    if (DataComponents.CONTAINER in stack)
         stack.update(DataComponents.CONTAINER, ItemContainerContents.EMPTY) { container ->
             ItemContainerContents.fromItems(container.allItemsCopyStream().map {
                 if (it.isEmpty) it else transform(it)
             }.toList())
         }
 
-    if (stack.has(DataComponents.CHARGED_PROJECTILES))
+    if (DataComponents.CHARGED_PROJECTILES in stack)
         stack.update(DataComponents.CHARGED_PROJECTILES, ChargedProjectiles.EMPTY) { projectiles ->
             ChargedProjectiles.ofNonEmpty(projectiles.itemCopies().map {
-                transform(it)
+                if (DataComponents.INTANGIBLE_PROJECTILE in it) it else transform(it)
             }.filter { !it.isEmpty })
         }
 }

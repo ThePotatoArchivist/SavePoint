@@ -111,8 +111,12 @@ object SavePoint : ModInitializer {
 		if (amountDropped >= stack.count) return null
 
 		modifyContents(stack) { containedStack ->
-			processAndDropStack(containedStack, savedDirty, drop)
-			containedStack
+			if (processAndDropStack(containedStack, savedDirty, drop))
+				containedStack
+			else {
+				drop(containedStack)
+				ItemStack.EMPTY
+			}
 		}
 
 		return stack.split(amountDropped)
