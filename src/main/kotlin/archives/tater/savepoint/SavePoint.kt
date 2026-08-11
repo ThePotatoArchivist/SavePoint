@@ -125,7 +125,7 @@ object SavePoint : ModInitializer {
 
 	@JvmStatic
 	fun checkSpawnpointMissing(player: ServerPlayerEntity) {
-		if (player.getRespawnTarget(false, TeleportTarget.NO_OP).missingRespawnBlock)
+		if (player.getRespawnTarget(true, TeleportTarget.NO_OP).missingRespawnBlock)
 			player.removeAttached(SAVE_STATE)
 	}
 
