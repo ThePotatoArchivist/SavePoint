@@ -34,6 +34,9 @@ object SavePoint : ModInitializer {
 	val RESTORE_IGNORED_TAG: TagKey<ComponentType<*>> = TagKey.of(RegistryKeys.DATA_COMPONENT_TYPE, id("restore_ignored"))
 
 	@JvmField
+	val NO_SAVE: ThreadLocal<Boolean> = ThreadLocal.withInitial { false }
+
+	@JvmField
 	val SAVE_STATE: AttachmentType<SaveState> = createAttachment(id("save_state")) {
 		persistent(SaveState.CODEC)
 		copyOnDeath()
