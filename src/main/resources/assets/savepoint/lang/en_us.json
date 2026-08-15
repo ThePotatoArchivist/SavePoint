@@ -1,3 +1,4 @@
 {
-  "savepoint.inventory_saved": "Inventory Saved"
+  "savepoint.inventory_saved": "Inventory Saved",
+  "gamerule.savepoint.restore_without_spawnpoint": "Restore saved inventory when spawnpoint missing"
 }

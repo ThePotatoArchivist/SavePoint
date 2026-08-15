@@ -4,6 +4,7 @@ import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
+import net.fabricmc.fabric.api.gamerule.v1.GameRuleBuilder
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.core.component.DataComponentType
 import net.minecraft.core.registries.Registries
@@ -15,6 +16,7 @@ import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.ItemStackTemplate
+import net.minecraft.world.level.gamerules.GameRuleCategory
 import net.minecraft.world.level.gamerules.GameRules
 import net.minecraft.world.level.portal.TeleportTransition
 import eu.pb4.trinkets.api.TrinketDropRule
@@ -30,6 +32,11 @@ object SavePoint : ModInitializer {
 	fun id(path: String): Identifier = Identifier.fromNamespaceAndPath(MOD_ID, path)
 
     private val logger = LoggerFactory.getLogger(MOD_ID)
+
+	@JvmField
+	val RESTORE_WITHOUT_SPAWNPOINT = GameRuleBuilder.forBoolean(false).apply {
+		category(GameRuleCategory.PLAYER)
+	}.buildAndRegister(id("restore_without_spawnpoint"))
 
 	val RESTORE_COMPARE_TAG: TagKey<DataComponentType<*>> = TagKey.create(Registries.DATA_COMPONENT_TYPE, id("restore_compare"))
 
@@ -138,7 +145,7 @@ object SavePoint : ModInitializer {
 
 	@JvmStatic
 	fun checkSpawnpointMissing(player: ServerPlayer) {
-		if (player.findRespawnPositionAndUseSpawnBlock(false, TeleportTransition.DO_NOTHING).missingRespawnBlock)
+		if (!player.level().gameRules[RESTORE_WITHOUT_SPAWNPOINT] && player.findRespawnPositionAndUseSpawnBlock(false, TeleportTransition.DO_NOTHING).missingRespawnBlock)
 			player.removeAttached(SAVE_STATE)
 	}
 
