@@ -34,7 +34,9 @@ operator fun <T: Any> AttachmentTarget.set(type: AttachmentType<T>, value: T?) =
 infix fun DataComponentType<*>.isIn(tag: TagKey<DataComponentType<*>>) =
     BuiltInRegistries.DATA_COMPONENT_TYPE.wrapAsHolder(this).`is`(tag)
 
-fun <T: Any> ItemStack.reset(componentType: DataComponentType<T>): T? = set(componentType, item.components()[componentType])
+fun <T: Any> ItemStack.reset(componentType: DataComponentType<T>): T? =
+    get(componentType).also { set(componentType, item.components()[componentType]) }
+// Normally you can just `return set()` but this causes a weird incompat with Defaulted and bundles
 
 fun <T: Any> LocalRef<T?>.getOrCreate(create: () -> T): T = get() ?: create().also { set(it) }
 
