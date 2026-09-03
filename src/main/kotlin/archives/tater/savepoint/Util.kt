@@ -43,4 +43,7 @@ operator fun <T: Any> AttachmentTarget.set(type: AttachmentType<T>, value: T?) =
 infix fun ComponentType<*>.isIn(tag: TagKey<ComponentType<*>>) =
     Registries.DATA_COMPONENT_TYPE.getEntry(this).isIn(tag)
 
-fun <T> ItemStack.reset(componentType: ComponentType<T>): T? = set(componentType, item.components[componentType])
+fun <T> ItemStack.reset(componentType: ComponentType<T>): T? =
+    get(componentType).also {
+        set(componentType, item.components[componentType])
+    }
