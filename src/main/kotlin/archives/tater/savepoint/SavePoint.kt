@@ -7,7 +7,6 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.component.ComponentType
 import net.minecraft.entity.ItemEntity
-import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.ItemStack
 import net.minecraft.registry.Registries
 import net.minecraft.registry.RegistryKeys
@@ -58,8 +57,6 @@ object SavePoint : ModInitializer {
                 .map { it.copy() }
                 .flatMap(::flatContents)
 				.toList(),
-			player.experienceLevel,
-			player.experienceProgress,
 		)
 
 		player.sendMessage(Text.translatableWithFallback(INVENTORY_SAVED_TEXT, "Inventory Saved"))
@@ -121,10 +118,6 @@ object SavePoint : ModInitializer {
     }
 
 	@JvmStatic
-	fun getKeptXpLevels(player: PlayerEntity) =
-		player[SAVE_STATE]?.experienceLevel?.coerceIn(0, player.experienceLevel) ?: 0 // Player cannot gain xp by dying
-
-	@JvmStatic
 	fun checkSpawnpointMissing(player: ServerPlayerEntity) {
 		if (player.getRespawnTarget(true /*don't consume respawn anchor charge*/, TeleportTarget.NO_OP).missingRespawnBlock)
 			player.removeAttached(SAVE_STATE)
@@ -136,8 +129,6 @@ object SavePoint : ModInitializer {
 		// Proceed with mild caution.
 		ServerPlayerEvents.COPY_FROM.register { oldPlayer, newPlayer, _ ->
 			newPlayer.inventory.clone(oldPlayer.inventory) // Make sure this doesn't cause problems
-			newPlayer.experienceLevel = getKeptXpLevels(oldPlayer)
-			newPlayer.experienceProgress = oldPlayer[SAVE_STATE]?.experienceProgress?.coerceIn(0f, oldPlayer.experienceProgress) ?: 0f
 		}
 		if (ACCESSORIES_INSTALLED) {
 			OnDropCallback.EVENT.register { rule, stack, slotRef, _ ->
