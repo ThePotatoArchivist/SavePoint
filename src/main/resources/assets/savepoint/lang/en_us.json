@@ -1,5 +1,6 @@
 {
   "savepoint.inventory_saved": "Inventory Saved",
-  "gamerule.savepoint.restore_without_spawnpoint": "Restore saved inventory when spawnpoint missing",
+  "gamerule.category.savepoint.save_point": "Save Point",
+  "gamerule.savepoint.restore_without_spawnpoint": "Restore when spawnpoint missing",
   "gamerule.savepoint.restore_experience": "Restore saved experience"
 }

@@ -34,13 +34,16 @@ object SavePoint : ModInitializer {
     private val logger = LoggerFactory.getLogger(MOD_ID)
 
 	@JvmField
+	val GAMERULE_CATEGORY = GameRuleCategory.register(id("save_point"))
+
+	@JvmField
 	val RESTORE_WITHOUT_SPAWNPOINT = GameRuleBuilder.forBoolean(false).apply {
-		category(GameRuleCategory.PLAYER)
+		category(GAMERULE_CATEGORY)
 	}.buildAndRegister(id("restore_without_spawnpoint"))
 
 	@JvmField
 	val RESTORE_EXPERIENCE = GameRuleBuilder.forBoolean(false).apply {
-		category(GameRuleCategory.PLAYER)
+		category(GAMERULE_CATEGORY)
 	}.buildAndRegister(id("restore_experience"))
 
 	val RESTORE_COMPARE_TAG: TagKey<DataComponentType<*>> = TagKey.create(Registries.DATA_COMPONENT_TYPE, id("restore_compare"))
