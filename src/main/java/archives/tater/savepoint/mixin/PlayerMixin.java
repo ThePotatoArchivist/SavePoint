@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 import org.objectweb.asm.Opcodes;
 
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
@@ -23,7 +24,8 @@ public abstract class PlayerMixin extends Entity {
             method = "getBaseExperienceReward",
             at = @At(value = "FIELD", target = "Lnet/minecraft/world/entity/player/Player;experienceLevel:I", opcode = Opcodes.GETFIELD)
     )
-    private int onlyDropRemainder(int original) {
+    private int onlyDropRemainder(int original, ServerLevel level) {
+        if (!level.getGameRules().get(SavePoint.RESTORE_EXPERIENCE)) return original;
         var saveState = getAttached(SavePoint.SAVE_STATE);
         if (saveState == null) return original;
         return original - SavePoint.getKeptXpLevels((Player) (Object) this);

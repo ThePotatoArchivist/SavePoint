@@ -38,6 +38,11 @@ object SavePoint : ModInitializer {
 		category(GameRuleCategory.PLAYER)
 	}.buildAndRegister(id("restore_without_spawnpoint"))
 
+	@JvmField
+	val RESTORE_EXPERIENCE = GameRuleBuilder.forBoolean(false).apply {
+		category(GameRuleCategory.PLAYER)
+	}.buildAndRegister(id("restore_experience"))
+
 	val RESTORE_COMPARE_TAG: TagKey<DataComponentType<*>> = TagKey.create(Registries.DATA_COMPONENT_TYPE, id("restore_compare"))
 
 	@JvmField
@@ -157,8 +162,10 @@ object SavePoint : ModInitializer {
 			if (alive || oldPlayer.level().gameRules[GameRules.KEEP_INVENTORY]) return@register
 
 			newPlayer.inventory.replaceWith(oldPlayer.inventory)
-			newPlayer.experienceLevel = getKeptXpLevels(oldPlayer)
-			newPlayer.experienceProgress = oldPlayer[SAVE_STATE]?.experienceProgress?.coerceIn(0f, oldPlayer.experienceProgress) ?: 0f
+			if (oldPlayer.level().gameRules[RESTORE_EXPERIENCE]) {
+				newPlayer.experienceLevel = getKeptXpLevels(oldPlayer)
+				newPlayer.experienceProgress = oldPlayer[SAVE_STATE]?.experienceProgress?.coerceIn(0f, oldPlayer.experienceProgress) ?: 0f
+			}
 		}
 		if (TRINKETS_INSTALLED) {
 			TrinketDropCallback.EVENT.register { rule, stack, access, entity ->
