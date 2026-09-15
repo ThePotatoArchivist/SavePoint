@@ -14,13 +14,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.core.NonNullList;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 
 import org.jspecify.annotations.Nullable;
+
+import static archives.tater.savepoint.UtilKt.drop;
 
 @Mixin(Inventory.class)
 public class InventoryMixin {
@@ -37,14 +39,14 @@ public class InventoryMixin {
 
     @WrapOperation(
             method = "dropAll",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;drop(Lnet/minecraft/world/item/ItemStack;ZZ)Lnet/minecraft/world/entity/item/ItemEntity;")
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;createItemStackToDrop(Lnet/minecraft/world/item/ItemStack;ZZ)Lnet/minecraft/world/entity/item/ItemEntity;")
     )
     private @Nullable ItemEntity processSaved(Player instance, ItemStack itemStack, boolean randomly, boolean thrownFromHand, Operation<@Nullable ItemEntity> original, @Share("keptItem") LocalBooleanRef keptItem) {
         var savedDirty = player.getAttached(SavePoint.SAVED_INVENTORY_DIRTY);
         keptItem.set(false);
         if (savedDirty == null) return original.call(instance, itemStack, randomly, thrownFromHand);
 
-        var dropped = SavePoint.processStack(itemStack, savedDirty, droppedStack -> original.call(instance, droppedStack, randomly, thrownFromHand));
+        var dropped = SavePoint.processStack(itemStack, savedDirty, droppedStack -> drop(instance.level(), original.call(instance, droppedStack, randomly, thrownFromHand)));
         if (dropped == null) return original.call(instance, itemStack, randomly, thrownFromHand);
 
         keptItem.set(true);

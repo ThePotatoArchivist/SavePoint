@@ -12,7 +12,9 @@ import net.minecraft.core.component.TypedDataComponent
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.Identifier
 import net.minecraft.tags.TagKey
+import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.item.ItemStack
+import net.minecraft.world.level.Level
 import java.util.stream.Stream
 import java.util.stream.StreamSupport
 
@@ -41,3 +43,7 @@ fun <T: Any> ItemStack.reset(componentType: DataComponentType<T>): T? =
 fun <T: Any> LocalRef<T?>.getOrCreate(create: () -> T): T = get() ?: create().also { set(it) }
 
 operator fun DataComponentHolder.contains(type: DataComponentType<*>) = has(type)
+
+fun Level.drop(item: ItemEntity?): ItemEntity? = item?.also {
+    addFreshEntity(it)
+}

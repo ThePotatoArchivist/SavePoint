@@ -8,8 +8,8 @@ import net.minecraft.world.item.component.ItemContainerContents
 import java.util.stream.Stream
 
 fun removeContents(stack: ItemStack): Stream<ItemStack>? =
-    stack.reset(DataComponents.BUNDLE_CONTENTS)?.itemCopyStream()
-        ?: stack.reset(DataComponents.CONTAINER)?.allItemsCopyStream()
+    stack.reset(DataComponents.BUNDLE_CONTENTS)?.itemCopies()
+        ?: stack.reset(DataComponents.CONTAINER)?.nonEmptyItemCopyStream()
 
 fun flatContents(stack: ItemStack): Stream<ItemStack> = removeContents(stack)
     .let { it ?: return streamOf(stack) }
@@ -20,8 +20,8 @@ fun flatContents(stack: ItemStack): Stream<ItemStack> = removeContents(stack)
 fun modifyContents(stack: ItemStack, transform: (ItemStack) -> ItemStack) {
     if (DataComponents.BUNDLE_CONTENTS in stack)
         stack.update(DataComponents.BUNDLE_CONTENTS, BundleContents.EMPTY) { contents ->
-            BundleContents.Mutable(BundleContents.EMPTY).apply {
-                for (stack in contents.itemCopyStream())
+            BundleContents.Mutable().apply {
+                for (stack in contents.itemCopies())
                     transform(stack)
                         .takeIf { !it.isEmpty }
                         ?.let { tryInsert(it) }
@@ -30,7 +30,7 @@ fun modifyContents(stack: ItemStack, transform: (ItemStack) -> ItemStack) {
 
     if (DataComponents.CONTAINER in stack)
         stack.update(DataComponents.CONTAINER, ItemContainerContents.EMPTY) { container ->
-            ItemContainerContents.fromItems(container.allItemsCopyStream().map {
+            ItemContainerContents.fromItems(container.itemCopies().map {
                 if (it.isEmpty) it else transform(it)
             }.toList())
         }
@@ -39,6 +39,6 @@ fun modifyContents(stack: ItemStack, transform: (ItemStack) -> ItemStack) {
         stack.update(DataComponents.CHARGED_PROJECTILES, ChargedProjectiles.EMPTY) { projectiles ->
             ChargedProjectiles.ofNonEmpty(projectiles.itemCopies().map {
                 if (DataComponents.INTANGIBLE_PROJECTILE in it) it else transform(it)
-            }.filter { !it.isEmpty })
+            }.filter { !it.isEmpty }.toList())
         }
 }

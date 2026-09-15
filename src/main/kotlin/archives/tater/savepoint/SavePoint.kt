@@ -179,7 +179,7 @@ object SavePoint : ModInitializer {
 					) return@register rule
 
 				val savedDirty = getDirtyOrSet(entity) ?: return@register TrinketDropRule.DEFAULT
-				if (processAndDropStack(stack, savedDirty) { entity.drop(it, true, false) })
+				if (processAndDropStack(stack, savedDirty) { entity.level().drop(entity.createItemStackToDrop(it, true, false)) })
 					TrinketDropRule.KEEP
 				else
 					TrinketDropRule.DEFAULT
